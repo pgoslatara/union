@@ -1,3 +1,5 @@
+#![no_std]
+
 use core::str::FromStr;
 
 use bytemuck::CheckedBitPattern;
@@ -50,7 +52,7 @@ impl Rev {
 }
 
 impl core::fmt::Display for Rev {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Rev::Unknown => f.write_str("unknown"),
             Rev::Dirty => f.write_str("dirty"),

@@ -564,6 +564,7 @@
               ])
               ++ [
                 pkgsUnstable.wasm-bindgen-cli_0_2_100
+                pkgs.twiggy
                 pkgs.wasm-pack
               ]
               ++ (with pkgsUnstable; [

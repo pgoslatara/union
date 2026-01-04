@@ -21,14 +21,13 @@ let
     ''
       ${pkgs.binaryen}/bin/wasm-opt target/wasm32-unknown-unknown/wasm-release/${contractFileNameWithoutExt}.wasm -Oz -o ${(crateCargoToml crateDirFromRoot).package.name}
 
-      ${pkgs.lib.meta.getExe pkgsUnstable.wasm-bindgen-cli_0_2_100} ${(crateCargoToml crateDirFromRoot).package.name} --out-dir $out --typescript --target nodejs
+      ${pkgs.lib.meta.getExe pkgsUnstable.wasm-bindgen-cli_0_2_100} ${(crateCargoToml crateDirFromRoot).package.name} --out-dir $out --typescript --target web
     '';
   cargoBuildExtraArgs =
     features:
     "--no-default-features --lib ${
       if features != null then lib.concatStringsSep " " ([ "--features" ] ++ features) else ""
     }";
-  # TODO: Add back -C opt-level=z once https://github.com/CosmWasm/cosmwasm/issues/2557 is resolved
   mkRustflags = "-C opt-level=z -C link-arg=-s -C target-cpu=mvp -C passes=adce,loop-deletion -Zlocation-detail=none";
 in
 crateDirFromRoot:

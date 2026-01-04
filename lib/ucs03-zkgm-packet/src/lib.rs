@@ -1,9 +1,20 @@
-use std::error::Error;
+// #![cfg_attr(not(test), no_std)]
+#![warn(
+    clippy::std_instead_of_core,
+    clippy::std_instead_of_alloc,
+    clippy::alloc_instead_of_core
+)]
+
+extern crate alloc;
+extern crate core;
+
+use alloc::format;
+use core::error::Error;
 
 use alloy_sol_types::{SolValue, abi::TokenSeq};
-use ucs03_zkgm::com::{TAG_ACK_FAILURE, TAG_ACK_SUCCESS};
 use unionlabs_primitives::{Bytes, H256, U256};
 
+use crate::com::{TAG_ACK_FAILURE, TAG_ACK_SUCCESS};
 pub use crate::{
     batch::{Batch, BatchAck, BatchShape},
     call::{Call, CallAck, CallShape},
@@ -12,13 +23,23 @@ pub use crate::{
     token_order::{TokenOrder, TokenOrderAck, TokenOrderShape},
 };
 
+#[global_allocator]
+static GLOBAL: dlmalloc::GlobalDlmalloc = dlmalloc::GlobalDlmalloc;
+
+// #[panic_handler]
+// fn panic_handler(_: &core::panic::PanicInfo) -> ! {
+//     loop {}
+// }
+
+mod com;
+
 pub mod batch;
 pub mod call;
 pub mod forward;
 pub mod root;
 pub mod token_order;
 
-pub type Result<T> = std::result::Result<T, Box<dyn Error + Send + Sync + 'static>>;
+pub type Result<T> = core::result::Result<T, alloc::boxed::Box<dyn Error + Send + Sync + 'static>>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(
@@ -34,11 +55,11 @@ pub struct ZkgmPacket {
 
 impl ZkgmPacket {
     pub fn decode(bz: impl AsRef<[u8]>) -> Result<Self> {
-        let ucs03_zkgm::com::ZkgmPacket {
+        let crate::com::ZkgmPacket {
             salt,
             path,
             instruction,
-        } = ucs03_zkgm::com::ZkgmPacket::abi_decode_params_validate(bz.as_ref())?;
+        } = crate::com::ZkgmPacket::abi_decode_params_validate(bz.as_ref())?;
 
         Ok(Self {
             salt: salt.into(),
@@ -48,7 +69,7 @@ impl ZkgmPacket {
     }
 
     pub fn encode(self) -> Bytes {
-        ucs03_zkgm::com::ZkgmPacket::abi_encode_params(&ucs03_zkgm::com::ZkgmPacket {
+        crate::com::ZkgmPacket::abi_encode_params(&crate::com::ZkgmPacket {
             salt: self.salt.into(),
             path: self.path.into(),
             instruction: self.instruction.into_instruction().into_raw(),
@@ -70,10 +91,10 @@ pub enum Ack {
 
 impl Ack {
     pub fn decode(shape: RootShape, bz: impl AsRef<[u8]>) -> Result<Self> {
-        let ucs03_zkgm::com::Ack { tag, inner_ack } =
-            ucs03_zkgm::com::Ack::abi_decode_params_validate(bz.as_ref())?;
+        let crate::com::Ack { tag, inner_ack } =
+            crate::com::Ack::abi_decode_params_validate(bz.as_ref())?;
 
-        match tag {
+        match U256::from(tag) {
             TAG_ACK_SUCCESS => RootAck::decode(shape, &inner_ack).map(Ack::Success),
             TAG_ACK_FAILURE => Ok(Ack::Failure(inner_ack.into())),
             invalid => Err(format!("invalid ack tag {invalid}"))?,
@@ -82,14 +103,14 @@ impl Ack {
 
     pub fn encode(&self) -> Bytes {
         match self {
-            Ack::Success(inner_ack) => ucs03_zkgm::com::Ack {
-                tag: TAG_ACK_SUCCESS,
+            Ack::Success(inner_ack) => crate::com::Ack {
+                tag: TAG_ACK_SUCCESS.into(),
                 inner_ack: inner_ack.encode().into(),
             }
             .abi_encode_params()
             .into(),
-            Ack::Failure(inner_ack) => ucs03_zkgm::com::Ack {
-                tag: TAG_ACK_FAILURE,
+            Ack::Failure(inner_ack) => crate::com::Ack {
+                tag: TAG_ACK_FAILURE.into(),
                 inner_ack: inner_ack.clone().into(),
             }
             .abi_encode_params()
@@ -125,8 +146,8 @@ impl Instruction {
         }
     }
 
-    pub(crate) fn into_raw(self) -> ucs03_zkgm::com::Instruction {
-        ucs03_zkgm::com::Instruction {
+    pub(crate) fn into_raw(self) -> crate::com::Instruction {
+        crate::com::Instruction {
             version: self.version,
             opcode: self.opcode,
             operand: self.operand.into(),
@@ -136,6 +157,8 @@ impl Instruction {
 
 #[cfg(feature = "wasm-bindgen")]
 mod wasm_bindgen_exports {
+    use alloc::{string::ToString, vec::Vec};
+
     use serde_wasm_bindgen::Serializer;
     use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 

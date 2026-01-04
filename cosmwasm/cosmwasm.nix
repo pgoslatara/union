@@ -16,7 +16,11 @@ _: {
         inherit gitRev;
       };
 
-      # CosmmWasm Contracts
+      ucs03-zkgm-packet = crane.buildWasm "lib/ucs03-zkgm-packet" {
+        features = [ "wasm-bindgen" ];
+      };
+
+      # CosmWasm Contracts
 
       cw-account = crane.buildWasmContract "cosmwasm/cw-account" { };
       cw-escrow-vault = crane.buildWasmContract "cosmwasm/cw-escrow-vault" {
@@ -1016,6 +1020,7 @@ _: {
             lst-staker
             proxy-account-factory
             ibc-union-contract-addresses
+            ucs03-zkgm-packet
             ;
           cosmwasm-scripts =
             {
