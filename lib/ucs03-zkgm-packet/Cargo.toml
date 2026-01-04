@@ -12,7 +12,7 @@ repository   = { workspace = true }
 workspace = true
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["rlib", "cdylib"]
 
 [dependencies]
 alloy-sol-types      = { workspace = true }
@@ -20,14 +20,16 @@ embed-commit         = { workspace = true }
 enumorph             = { workspace = true }
 hex-literal          = { workspace = true }
 serde                = { workspace = true, optional = true, features = ["derive"] }
-serde-wasm-bindgen   = "0.6.5"
+serde-wasm-bindgen   = { version = "0.6.5", optional = true }
+serde_bytes          = { version = "0.11.19", optional = true, default-features = false, features = ["alloc"] }
 ucs03-zkgm           = { workspace = true, features = ["library"] }
 unionlabs-primitives = { workspace = true }
-wasm-bindgen         = "=0.2.100"
+wasm-bindgen         = { version = "=0.2.100", optional = true }
 
 [features]
-default = ["serde"]
-serde   = ["dep:serde", "unionlabs-primitives/serde"]
+default      = ["serde"]
+serde        = ["dep:serde", "unionlabs-primitives/serde"]
+wasm-bindgen = ["serde", "dep:wasm-bindgen", "dep:serde-wasm-bindgen", "dep:serde_bytes"]
 
 [dev-dependencies]
 serde_json = { workspace = true }
